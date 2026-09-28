@@ -1,0 +1,5 @@
+dist/*
+!dist/.gitkeep
+__pycache__/
+*.pyc
+
