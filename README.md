@@ -1,63 +1,207 @@
-# Biomedical Journal Selector / 生物医学智能择刊
+<div align="center">
 
-一个开放的 Agent Skill：读取完整论文或摘要，评估稿件质量，核验 SCI/SCIE、中文核心、科技核心、CSCD 与正规普刊，并为每本候选期刊分别判断：
+# Biomedical Journal Selector
 
-- 适合吗；
-- 够得着吗；
-- 值得投吗；
-- 通过编辑初筛并送外审的概率；
-- 已送外审后最终接收的概率；
-- 从今天提交开始的总体接收概率。
+### 生物医学智能择刊 Skill
 
-概率是结构化决策辅助估计，不是期刊官方承诺或录用保证。
+> 从“这本期刊相关吗”升级到“适合吗、够得着吗、值得投吗”。<br>
+> From topical matching to an evidence-grounded submission decision.
 
-## 特点
+[![Agent Skill](https://img.shields.io/badge/Agent-Skill-2563EB)](./SKILL.md)
+[![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Compatible-7C3AED)](https://open.workbuddy.cn/en/docs/skill)
+[![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-0F766E)](./SKILL.md)
 
-- 全文和摘要两种模式；
-- 动态信息要求联网核验、标注年份、来源与核验日期；
-- 区分官方数据、第三方统计和投稿者自报；
-- 区分北大核心、中国科技核心、CSCD及单位内部目录；
-- 冲刺、主投、保底投稿梯队；
-- 概率区间、置信度、证据层级及数学一致性检查；
-- 不内置会快速过时的期刊名单。
+</div>
 
-## 仓库结构
+---
+
+## 这是什么
+
+一个面向生物医学论文的开放 Agent Skill。上传完整论文或提供摘要后，它会先判断稿件的真实竞争力，再核验 SCI/SCIE、中文核心、中国科技核心、CSCD 与正规普刊的最新信息，最后形成可解释的投稿梯队。
+
+它不是“按关键词列出几本期刊”，而是一套完整决策流程：
 
 ```text
-SKILL.md
-agents/openai.yaml
-references/
-scripts/probability_check.py
+稿件诊断 → 候选刊发现 → 动态信息核验 → 三维判断 → 三阶段概率 → 投稿顺序
 ```
+
+## 最核心的输出
+
+每一本候选期刊都必须分别回答三个问题：
+
+| 判断 | 核心问题 | 典型结论 |
+|---|---|---|
+| 适合吗 | 研究范围、文章类型、方法和读者是否匹配 | 高度适合 / 比较适合 / 勉强适合 / 不适合 |
+| 够得着吗 | 稿件质量是否达到期刊近期同类论文的竞争水平 | 明显达到 / 基本达到 / 边缘可尝试 / 当前明显不足 |
+| 值得投吗 | 综合概率、价值、时间、费用、风险后是否值得消耗一次投稿机会 | 优先投稿 / 值得投稿 / 有条件尝试 / 不建议投稿 |
+
+这三个结论相互独立。主题匹配不代表质量够得着，够得着也不代表在周期、费用或风险上值得投。
+
+## 三阶段录用概率
+
+每本期刊给出一组有条件关系的概率估计：
+
+| 概率 | 含义 |
+|---|---|
+| `P(送外审｜今天提交)` | 通过编辑部和学术编辑初筛、进入正式同行评审的概率 |
+| `P(最终接收｜已经送外审)` | 在已经送外审的前提下，经修改和复审后最终接收的概率 |
+| `P(最终接收｜今天提交)` | 从今天投稿开始计算的总体接收概率 |
+
+原则上执行一致性校验：
+
+```text
+总体接收概率 ≈ 送外审概率 × 外审后接收概率
+```
+
+概率采用区间、中心估计、置信等级和证据依据，不制造看似精确的数字。必要时同时比较“当前版本”与“完成关键修改后”的概率。
+
+> [!IMPORTANT]
+> 录用概率是决策辅助估计，不是期刊官方承诺或录用保证。编辑判断、审稿人意见、同期稿件竞争和期刊政策变化都可能使实际结果明显偏离估计。
+
+## 核心能力
+
+- **全文与摘要双模式**：摘要模式自动扩大概率区间、降低置信度，并指出必须等待全文确认的问题。
+- **论文质量诊断**：区分研究质量和写作完成度，识别编辑初筛风险、外审风险、可修复与不可修复缺陷。
+- **动态期刊核验**：期刊指标、分区、收录、费用、周期与政策必须标注来源、年份和核验日期。
+- **证据分层**：明确区分官方数据、权威索引、第三方统计与投稿者自报。
+- **相似论文验证**：检查近 2–3 年真实发文，验证研究主题、设计、数据类型和读者匹配。
+- **风险审查**：识别收录变化、指标压制、预警、克隆网站、异常特刊和单位不认可风险。
+- **中文期刊专门规则**：严格区分北大中文核心、中国科技核心、CSCD和普通正式期刊。
+- **投稿梯队**：输出冲刺、主投、保底以及拒稿后的顺序化转投路径。
+- **隐私最小化**：外部检索只使用必要的主题、设计和方法特征，不主动上传完整未发表稿件或患者信息。
+
+## 适用场景
+
+| 你提供什么 | Skill 如何处理 |
+|---|---|
+| 完整中文或英文论文 | 做全文质量诊断、择刊与概率评估 |
+| 题目和摘要 | 做有边界的初步择刊，并列出关键缺失信息 |
+| 若干候选期刊 | 比较适配、概率、费用、周期和风险 |
+| 拒稿信与稿件 | 分析可能原因并规划下一轮投稿 |
+| 职称或毕业要求 | 将单位认定、时限、费用纳入“值得投吗” |
+| 研究方案或初步结果 | 评估未来投稿层级和最值得补强的证据 |
+
+支持临床、基础、公共卫生、护理、药学、检验、影像、生物信息学、组学、动物实验和转化医学等方向。
+
+## 输出长什么样
+
+结果首先展示使用者最关心的概率总览：
+
+| 期刊 | 档位 | 适合吗 | 够得着吗 | 值得投吗 | 送外审 | 外审后接收 | 总体接收 | 置信度 |
+|---|---|---|---|---|---:|---:|---:|---|
+| Journal A | 主投 | 高度适合 | 基本达到 | 优先投稿 | 40%–55% | 35%–50% | 14%–28% | 中 |
+
+随后提供逐刊决策卡、稿件诊断、相似论文、风险信息、投稿顺序、不推荐清单和不确定性说明。
 
 ## 安装
 
-### Codex 或兼容 Agent Skills 的主机
-
-将本仓库克隆或复制到技能目录，并调用 `$biomedical-journal-selector`。若主机支持 GitHub CLI 的 Skill 预览功能，可先预览仓库后再安装；请以对应主机的当前文档为准。
-
 ### WorkBuddy
 
-从 GitHub Releases 下载 `biomedical-journal-selector-workbuddy.zip` 与 `SHA256SUMS`，校验后在 WorkBuddy 的“专家·Skills·Connectors → Skills → 添加 Skill”中上传原始 ZIP。ZIP 根目录直接包含 `SKILL.md`，不要再次套一层文件夹压缩。
+推荐从 GitHub Releases 下载：
 
-## 使用示例
+- `biomedical-journal-selector-workbuddy.zip`
+- `SHA256SUMS`
 
-```text
-使用 $biomedical-journal-selector 分析这篇全文。我希望投稿 SCI，中科院二区或三区，预算不超过 15000 元，半年内见刊。请核验最新信息，并为每本期刊给出三阶段录用概率。
+校验后，在 WorkBuddy 中打开“专家 · Skills · Connectors → Skills → 添加 Skill”，直接上传原始 ZIP。压缩包根目录已经包含 `SKILL.md`，不要再次套一层目录压缩。
+
+也可手动安装：
+
+```bash
+git clone https://github.com/speetle/biomedical-journal-selector.git
+mkdir -p ~/.workbuddy/skills
+cp -R biomedical-journal-selector ~/.workbuddy/skills/
 ```
 
+### Codex 或其他 Agent Skills 兼容环境
+
+克隆仓库到对应技能目录，然后调用：
+
 ```text
-使用 $biomedical-journal-selector 根据摘要做初步择刊。请分别推荐冲刺、主投和保底期刊，并明确哪些判断必须等全文才能确认。
+$biomedical-journal-selector
 ```
 
-## 隐私
+通用 `SKILL.md` 保持 Agent Skills/Codex 兼容；发布脚本会自动生成含 WorkBuddy 专用中英文元数据的 ZIP。
 
-未发表论文可能包含敏感知识产权或个人信息。运行本 Skill 时，只向外部搜索服务提交最少必要的主题、设计和方法特征，不上传患者信息、作者身份或完整未发表稿件。
+## 使用
 
-## 发布 WorkBuddy Marketplace
+安装后可直接用自然语言触发：
 
-通用 `SKILL.md` 保持 Agent Skills/Codex 兼容；`scripts/package_workbuddy.py` 在打包时加入 WorkBuddy 要求的中英文描述、版本和作者字段。运行 `python3 scripts/package_workbuddy.py` 即可生成可上传 ZIP 与 SHA-256 校验和。Marketplace 发布仍需发布者在 WorkBuddy Open Platform 完成主体认证、测试和审核；详见官方 Open Platform 文档。
+| 你说 | 它做什么 |
+|---|---|
+| “根据这篇全文推荐 SCI，预算不超过 15000 元” | 全文诊断、动态核验、三阶段概率和投稿梯队 |
+| “只有摘要，先判断适合哪些肿瘤学期刊” | 摘要级初筛，并降低概率置信度 |
+| “比较这 5 本期刊” | 逐刊判断适合、够得着、值得投 |
+| “这篇生信文章没有湿实验，能投什么层级？” | 评估证据链缺口和现实投稿天花板 |
+| “我要评职称，推荐目前仍属于科技核心的中文期刊” | 按目录版本与单位认定要求核验 |
+| “被拒稿了，下一本投哪里？” | 结合拒稿原因安排转投顺序和改稿重点 |
 
-## 许可证
+示例：
 
-MIT License。详见 [LICENSE](LICENSE)。
+```text
+使用 $biomedical-journal-selector 分析这篇论文。
+目标为 SCI、中科院二区或三区；预算不超过 15000 元；希望半年内见刊。
+请核验最新信息，并为每本期刊给出三阶段录用概率。
+```
+
+## 信息来源与边界
+
+动态信息优先级：期刊或出版社官网及权威索引数据库 → 官方作者指南 → 可信第三方 → 投稿者自报。
+
+- 无法核实的信息标记为“未核实”，不凭记忆补齐。
+- 投稿者反馈属于弱证据，单个帖子不能证明审稿速度、接受率或编辑偏好。
+- 影响因子、分区、发文量和期刊总体接受率不能直接等同于具体稿件的录用概率。
+- 本 Skill 不保证录用、不代写论文、不伪造数据，也不替代研究者、编辑或所在机构的最终判断。
+
+## 项目结构
+
+```text
+biomedical-journal-selector/
+├── SKILL.md
+├── agents/
+│   └── openai.yaml
+├── references/
+│   ├── manuscript-assessment.md
+│   ├── journal-verification.md
+│   ├── matching-and-ranking.md
+│   ├── chinese-journals.md
+│   └── output-template.md
+├── scripts/
+│   ├── probability_check.py
+│   └── package_workbuddy.py
+└── .github/workflows/release.yml
+```
+
+## 开发与打包
+
+检查三阶段概率的一致性：
+
+```bash
+python3 scripts/probability_check.py \
+  --screen 40 55 \
+  --review 35 50 \
+  --overall 14 28
+```
+
+生成 WorkBuddy 安装包与 SHA-256 校验文件：
+
+```bash
+python3 scripts/package_workbuddy.py
+```
+
+推送 `v*` 标签后，GitHub Actions 会自动构建 Release ZIP。
+
+## 隐私与免责声明
+
+- 未发表稿件可能包含敏感知识产权、患者信息或作者身份信息，请在使用前完成必要脱敏。
+- 外部检索应遵循最小必要原则，不向未经授权的服务提交完整稿件。
+- 概率估计仅用于规划投稿策略，不代表期刊真实统计结果或任何录用承诺。
+- 核心目录、数据库收录、费用与政策会变化，投稿前仍应核对期刊官网和所在单位最新规定。
+
+## 贡献
+
+欢迎通过 Issues 报告失效来源、概率逻辑问题、期刊核验遗漏或跨平台兼容问题。请勿在公开 Issue 中上传未发表全文、患者资料或其他敏感信息。
+
+## 许可
+
+MIT License，见 [LICENSE](./LICENSE)。
