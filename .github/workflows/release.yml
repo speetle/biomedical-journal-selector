@@ -1,0 +1,34 @@
+name: Package WorkBuddy Skill
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check probability helper
+        run: python3 scripts/probability_check.py --screen 40 55 --review 35 50 --overall 14 28
+      - name: Build WorkBuddy archive
+        run: python3 scripts/package_workbuddy.py --output-dir .
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: biomedical-journal-selector-workbuddy
+          path: |
+            biomedical-journal-selector-workbuddy.zip
+            SHA256SUMS
+      - name: Attach artifacts to tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            biomedical-journal-selector-workbuddy.zip
+            SHA256SUMS
