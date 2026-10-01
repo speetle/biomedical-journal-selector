@@ -1,7 +1,6 @@
 interface:
   display_name: "生物医学智能择刊"
-  short_description: "核验期刊并评估三阶段录用概率与投稿梯队"
-  default_prompt: "使用 $biomedical-journal-selector 分析这篇生物医学稿件，核验候选期刊并给出三阶段录用概率。"
+  short_description: "本地评估稿件并生成含期刊指标与录用概率的Word报告"
+  default_prompt: "使用 $biomedical-journal-selector 在本地分析这篇生物医学稿件，核验候选期刊并生成 Word 测评报告。"
 policy:
   allow_implicit_invocation: true
-
