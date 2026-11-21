@@ -10,7 +10,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent-Skill-2563EB)](./SKILL.md)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Compatible-7C3AED)](https://open.workbuddy.cn/en/docs/skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.14-0F766E)](./SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.4.15-0F766E)](./SKILL.md)
 [![Local Processing](https://img.shields.io/badge/manuscript-local%20processing-16A34A)](#隐私与本地处理)
 
 </div>
@@ -138,26 +138,31 @@ $biomedical-journal-selector
 
 通用 `SKILL.md` 保持 Agent Skills/Codex 兼容；发布脚本会自动生成含 WorkBuddy 专用中英文元数据的 ZIP。
 
-### 候选池主表
+### 期刊数据规模与字段
 
-生物医药类稿件的初筛候选池来自 `references/期刊明细_第二轮.xlsx`（随包分发，`逐刊明细` sheet，4398 本期刊 × 42 列，IF 降序）。默认直接读包内快照；如果你有自己的主表，用环境变量覆盖：
+本技能**不随包分发任何期刊数据文件**。整理成果只以「规模 + 字段 + 口径」的形式公开，原始表由使用者或所在机构自行维护后挂载。
+
+已整理（快照 2026-11-15）：
+
+| 数据集 | 数量 | 字段 |
+|---|---|---|
+| SCI/SCIE 生物医药期刊 | 4,398 本（IF 降序） | 42 项：刊名/缩写、ISSN/EISSN、WoS 学科、JCR 分区、影响因子、PubMed/MEDLINE/SCIE 可检索性、文章类型、OA 模式与 APC、年发文量、预警与剔除状态 |
+| 中文期刊（R 医药卫生 + Q 生物科学） | 1,084 本（已剔除停刊与年均发文 <10） | 41 项：CN 号/ISSN、主管与主办单位、出版周期、出版状态、维普/知网/万方收录、北大核心/CSCD/中国科技核心/RCCSE 标签、收稿范围、常设栏目、近刊高频主题、审稿周期、版面费、录用率、编辑部邮箱/电话/地址/邮编、纸刊单价 |
+| 新闻出版署全库底册 | 10,860 条 | 刊号、刊名、主办单位、出版状态（用于刊号查伪与停刊排查） |
+| JCR 生物医学索引 | 4,181 本 | JIF、分区、WoS 学科、PubMed/MEDLINE/SCIE 双可检索标记（随包，仅作交叉校验） |
+
+字段口径与缺口（如实披露）：
+
+- 中文刊 `审稿周期`、`版面费`、`录用率` 绝大多数为「未公开」——官方不公开，绝不从中介站或经验帖代填。
+- 中文刊画像覆盖率：简介 99.7%、高频主题 98.9%、电话 95.5%、地址 98.4%、邮编 94.2%、邮箱 81.2%、收稿范围明示 53.9%、常设栏目 35.8%。
+- 知网、万方两列因全站验证码未采集，留空标「未采集」，不以维普结果代替。
+- 主表是静态快照，投稿前仍须逐刊联网核验当前收录、分区、费用与投稿入口。
+
+挂载自有主表（缺省时技能降级为「仅联网核验 + JCR 索引」，不生成三档名单）：
 
 ```bash
-export BJS_MAIN_TABLE=/path/to/你的主表.xlsx
-```
-
-中文期刊同理，随包 `references/中文期刊明细_第二轮.xlsx`（`逐刊明细` sheet，1,084 本 × 41 列，含收录、核心标签、收稿范围、审稿周期、版面费、录用率、编辑部联系方式）：
-
-```bash
-export BJS_CN_TABLE=/path/to/你的中文主表.xlsx
-```
-
-SCI 主表被修改后，用显式通道更新指纹并留下原因，禁止手工改 MD5：
-
-```bash
-python3 scripts/candidate_pool_check.py \
-  --fingerprint references/journal_master_fingerprint.json \
-  --update-fingerprint --reason "替换为 2027 版主表"
+export BJS_MAIN_TABLE=/path/to/SCI主表.xlsx    # 逐刊明细 sheet，42 列
+export BJS_CN_TABLE=/path/to/中文主表.xlsx      # 逐刊明细 sheet，41 列
 ```
 
 ## 使用
@@ -205,9 +210,6 @@ biomedical-journal-selector/
 │   ├── output-template.md
 │   ├── privacy-local-processing.md
 │   ├── word-report.md
-│   ├── 期刊明细_第二轮.xlsx        # SCI 候选池主表（4398 本，42 列）
-│   ├── 中文期刊明细_第二轮.xlsx    # 中文候选池主表（1084 本，41 列）
-│   ├── journal_master_fingerprint.json
 │   ├── catalog_anchor.json
 │   └── jcr_2026_candidates.tsv      # 交叉校验索引（4181 本）
 ├── scripts/
@@ -229,10 +231,10 @@ python3 scripts/probability_check.py \
   --overall 14 28
 ```
 
-自检候选池、规则文本、报告模板与指纹一致性（需 `pip install openpyxl`）：
+自检规则文本与报告模板（需 `pip install openpyxl`）。挂载自有主表后会追加主表结构、IF 排序与指纹判据；未挂载时以 `DEGRADED`（RC=2）返回，不冒充 PASS：
 
 ```bash
-python3 scripts/candidate_pool_check.py
+BJS_MAIN_TABLE=/path/to/主表.xlsx python3 scripts/candidate_pool_check.py
 ```
 
 生成 WorkBuddy 安装包与 SHA-256 校验文件：
@@ -259,14 +261,15 @@ python3 scripts/package_workbuddy.py
 
 | 版本 | 要点 |
 |---|---|
-| 1.4.14 | 随包分发中文期刊主表（1,084 本 × 41 列）与读取规则；中文稿初筛必须回指主表行号，「未公开」字段禁止用中介站数据补齐 |
-| 1.4.13 | 路径可移植：主表、指纹与演练目录改为包内相对路径，支持 `BJS_MAIN_TABLE` / `BJS_FINGERPRINT` / `BJS_DRILL_DIR` 覆盖；随包分发候选池主表；打包脚本从 `SKILL.md` 读取版本号，不再硬编码 |
+| 1.4.15 | 期刊数据文件移出仓库与发行包，仅公开规模、字段与覆盖率；主表改为使用者挂载，自检区分 DEGRADED 与 FAIL |
+| 1.4.14 | 中文候选池字段与读取规则：初筛须回指主表行号，「未公开」字段禁止用中介站数据补齐 |
+| 1.4.13 | 路径可移植：主表改为外部挂载（`BJS_MAIN_TABLE` / `BJS_CN_TABLE` / `BJS_FINGERPRINT` / `BJS_DRILL_DIR`），数据文件不入库；打包脚本从 `SKILL.md` 读取版本号 |
 | 1.4.12 | 注入演练回执绑定：13 段演练结论写入回执并由单一入口逐件核对 MD5，杜绝「改了判据脚本仍沿用上次全绿」 |
 | 1.4.11 | Word 报告按 F1–F7 逐项机检；指纹更新只能显式触发且必须留痕；注入演练一键脚本化 |
 | 1.4.10 | 模板七项必填字段逐项机检 + 逐项反向演练；主表指纹升级为硬判据 |
 | 1.4.9 | 活跃自检套件纳入窗口上限与端到端报告；自检可分套注入验证 |
 | 1.4.8 | 报告端候选池绑定演练；主表外候选单独列示 |
-| 1.4.7 | 生物医药初筛候选池改为唯一来源 `期刊明细_第二轮.xlsx`，JCR 索引降级为交叉校验 |
+| 1.4.7 | 生物医药初筛候选池改为唯一来源（外部主表），JCR 索引降级为交叉校验 |
 | 1.1.0 | 首个公开版：本地稿件诊断、三阶段录用概率、Word 报告 |
 
 ## 许可

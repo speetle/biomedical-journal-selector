@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v1.4.7+ 自检：确认生物医药择刊候选池确实绑定 期刊明细_第二轮.xlsx。
+"""v1.4.7+ 自检：确认生物医药择刊候选池确实绑定外部候选池主表（BJS_MAIN_TABLE）。
 
 只读，不修改任何文件（--smoke 的演练清单只在内存中构造；--full-smoke 幂等写演练报告）。用法：
   python3 scripts/candidate_pool_check.py                 # 规则 + 主表结构自检
@@ -31,8 +31,8 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 # v1.4.13：路径改为可移植。优先环境变量，其次技能包内快照，便于第三方直接使用。
-DEFAULT_MAIN = Path(os.environ.get('BJS_MAIN_TABLE')
-                    or (BASE / 'references' / '期刊明细_第二轮.xlsx'))
+# 候选池主表属于使用者自有数据资产，不随技能包分发：只认 BJS_MAIN_TABLE 或 --main。
+DEFAULT_MAIN = Path(os.environ['BJS_MAIN_TABLE']) if os.environ.get('BJS_MAIN_TABLE') else None
 FP = Path(os.environ.get('BJS_FINGERPRINT')
           or (BASE / 'references' / 'journal_master_fingerprint.json'))
 SKILL = BASE / 'SKILL.md'
@@ -61,13 +61,14 @@ def arg_value(flag):
 
 
 MAIN = Path(arg_value('--main')) if arg_value('--main') else DEFAULT_MAIN
+DEGRADED = MAIN is None or not MAIN.is_file()
 # 规则文本里只锚定随包相对路径，环境变量或 --main 注入都不得让这条判据漂移。
-MAIN_TOKEN = 'references/期刊明细_第二轮.xlsx'
+MAIN_TOKEN = 'BJS_MAIN_TABLE'
 TPL_INJECT = Path(arg_value('--template')) if arg_value('--template') else TPL
 FP_INJECT = Path(arg_value('--fingerprint')) if arg_value('--fingerprint') else FP
 REASON = (arg_value('--reason') or '').strip()
-MAIN_STR = str(MAIN)
-DEFAULT_MAIN_STR = str(DEFAULT_MAIN)
+MAIN_STR = str(MAIN) if MAIN else '未配置（需 BJS_MAIN_TABLE）'
+DEFAULT_MAIN_STR = MAIN_STR
 
 results = []
 smoke = []
@@ -78,33 +79,42 @@ def ck(name, ok, detail='', sink=None):
     (sink if sink is not None else results).append((name, bool(ok), detail))
 
 
+def ck_main(name, ok, detail=''):
+    """主表未配置（DEGRADED）时不计入，避免把「没装数据」伪装成 PASS 或 FAIL。"""
+    if DEGRADED:
+        return
+    ck(name, ok, detail)
+
+
 def compact(s):
     return re.sub(r'[^a-z0-9]', '', str(s or '').lower().replace('&', 'and'))
 
 
 # --- 1. 主表文件与指纹 ---
-ck('主表绝对路径存在', MAIN.is_file(), MAIN_STR)
+ck_main('主表绝对路径存在', bool(MAIN and MAIN.is_file()), MAIN_STR)
 MD5 = ''
-if MAIN.is_file():
+if MAIN is not None and MAIN.is_file():
     st = os.stat(MAIN)
     MD5 = hashlib.md5(MAIN.read_bytes()).hexdigest()[:12]
-    ck('主表非空', st.st_size > 100000, f'{st.st_size} B / MD5 {MD5}')
+    ck_main('主表非空', st.st_size > 100000, f'{st.st_size} B / MD5 {MD5}')
 # v1.4.10：主表被改动时必须有判据挡住，而不是只在 detail 里打印 MD5。
 # 登记值取自项目内持久指纹清单（第十九轮 v3 验收写前基线），不硬编码在脚本里。
 REG_MD5 = ''
 try:
+    if DEGRADED:
+        raise RuntimeError('主表未配置，跳过指纹比对')
     REG_MD5 = json.loads(FP_INJECT.read_text(encoding='utf-8'))['文件'][
-        DEFAULT_MAIN.name]['MD5'][:12]
-    ck('已审定主表指纹清单可读', bool(REG_MD5), str(FP_INJECT))
+        MAIN.name]['MD5'][:12]
+    ck_main('已审定主表指纹清单可读', bool(REG_MD5), str(FP_INJECT))
 except Exception as e:
-    ck('已审定主表指纹清单可读', False, f'{type(e).__name__}: {e}')
-ck('主表指纹与已审定基线一致', bool(MD5) and MD5 == REG_MD5,
+    ck_main('已审定主表指纹清单可读', False, f'{type(e).__name__}: {e}')
+ck_main('主表指纹与已审定基线一致', bool(MD5) and MD5 == REG_MD5,
    f'{MD5} vs {REG_MD5}')
 
 # v1.4.11 硬判据：证明「指纹不一致时脚本不会自动改写清单」，否则显式更新通道
 # 会变成「篡改主表 → 自检自动把基线洗绿」的静默后门。子进程带 --no-recursive-drill
 # 防止自指递归；改的是临时副本，真清单零改动。
-if not NO_DRILL and not UPDATE_FP:
+if not NO_DRILL and not UPDATE_FP and not DEGRADED:
     import subprocess
     _tmp = Path(tempfile.mkdtemp(prefix='fp_nodrill_'))
     try:
@@ -118,7 +128,7 @@ if not NO_DRILL and not UPDATE_FP:
                             text=True, timeout=180, cwd=str(SELF.parent))
         _out = (_p.stdout or '') + (_p.stderr or '')
         _unchanged = _bad.read_bytes() == _before
-        ck('指纹不一致时不会自动洗白清单',
+        ck_main('指纹不一致时不会自动洗白清单',
            _p.returncode != 0 and 'FAIL | 主表指纹与已审定基线一致' in _out
            and _unchanged, f'rc={_p.returncode} 副本未被改写={_unchanged}')
     except Exception as e:
@@ -199,22 +209,24 @@ if UPDATE_FP:
 
 # --- 2. 主表结构（结构判据，不读业务值做推断） ---
 try:
+    if DEGRADED:
+        raise RuntimeError('主表未配置')
     import openpyxl
     wb = openpyxl.load_workbook(MAIN_STR, read_only=True, data_only=True)
-    ck('sheet 数 = 9', len(wb.sheetnames) == 9, str(wb.sheetnames))
-    ck('含 逐刊明细 sheet', '逐刊明细' in wb.sheetnames, str(wb.sheetnames))
+    ck_main('sheet 数 = 9', len(wb.sheetnames) == 9, str(wb.sheetnames))
+    ck_main('含 逐刊明细 sheet', '逐刊明细' in wb.sheetnames, str(wb.sheetnames))
     ws = wb['逐刊明细']
-    ck('行数 = 4399', ws.max_row == 4399, str(ws.max_row))
-    ck('列数 = 42', ws.max_column == 42, str(ws.max_column))
+    ck_main('行数 = 4399', ws.max_row == 4399, str(ws.max_row))
+    ck_main('列数 = 42', ws.max_column == 42, str(ws.max_column))
     hdr = [str(c.value or '') for c in next(ws.iter_rows(min_row=1, max_row=1))]
-    ck('表头非空且 42 格', len(hdr) == 42 and sum(bool(x.strip()) for x in hdr) >= 35,
+    ck_main('表头非空且 42 格', len(hdr) == 42 and sum(bool(x.strip()) for x in hdr) >= 35,
        f'非空 {sum(bool(x.strip()) for x in hdr)}/42')
     if_col = next((i + 1 for i, h in enumerate(hdr)
                    if ('影响因子' in h or h.strip().upper() == 'IF')), None)
-    ck('表头含 IF/影响因子列（字段以读盘为准）', if_col is not None,
+    ck_main('表头含 IF/影响因子列（字段以读盘为准）', if_col is not None,
        f'列 {if_col} = {hdr[if_col-1] if if_col else "N/A"}')
     rows = list(ws.iter_rows(min_row=2, values_only=True))
-    ck('A 列序号 1..4398 连续', [r[0] for r in rows] == list(range(1, 4399)),
+    ck_main('A 列序号 1..4398 连续', [r[0] for r in rows] == list(range(1, 4399)),
        f'{len(rows)} 行')
     if if_col:
         def tonum(v):
@@ -226,15 +238,15 @@ try:
             except ValueError:
                 return None
         nums = [x for x in (tonum(r[if_col - 1]) for r in rows) if x is not None]
-        ck('IF 数值可读', len(nums) >= 4000,
+        ck_main('IF 数值可读', len(nums) >= 4000,
            f'{len(nums)}/4398 个数值（列 {if_col} = {hdr[if_col-1]}）')
-        ck('IF 降序', bool(nums) and all(a >= b for a, b in zip(nums, nums[1:])),
+        ck_main('IF 降序', bool(nums) and all(a >= b for a, b in zip(nums, nums[1:])),
            f'首末 {nums[0]} / {nums[-1]}' if nums else '无数值')
     names = {ri: compact(r[1]) for ri, r in enumerate(rows, 2)}  # B 列刊名
     wb.close()
 except Exception as e:
     names = {}
-    ck('主表结构读取', False, f'{type(e).__name__}: {e}')
+    ck_main('主表结构读取', False, f'{type(e).__name__}: {e}')
 
 # --- 3. SKILL.md 规则文本（按节精确判，避免别处出现同串就恒绿） ---
 sk = SKILL.read_text(encoding='utf-8') if SKILL.is_file() else ''
@@ -270,7 +282,7 @@ ck('报告模板含「候选池与口径」必填节', '候选池与口径' in t
 ck('报告模板要求主表行号', '主表行号' in tpl, '')
 
 TPL_FIELDS = [
-    ('F1', '候选池绝对路径', '期刊明细_第二轮.xlsx'),
+    ('F1', '候选池绝对路径', 'BJS_MAIN_TABLE'),
     ('F2', 'sheet 名', '逐刊明细'),
     ('F3', '行列数', '4399'),
     ('F4', '文件指纹', 'MD5 前 12 位'),
@@ -804,5 +816,9 @@ if '--smoke' in sys.argv:
 fail = [r for r in results if not r[1]]
 for name, ok, detail in results:
     print(('PASS' if ok else 'FAIL'), '|', name, '|', detail)
+if DEGRADED:
+    print('NOTE | 未配置候选池主表（BJS_MAIN_TABLE 或 --main）：主表结构与指纹判据未执行')
+    print(f'ALL_CHECKS DEGRADED {len(results)-len(fail)}/{len(results)} PASS')
+    sys.exit(2 if not fail else 1)
 print(f'ALL_CHECKS {"OK" if not fail else "FAILED"} {len(results)-len(fail)}/{len(results)} PASS')
 sys.exit(0 if not fail else 1)
