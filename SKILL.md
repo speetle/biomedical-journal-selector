@@ -3,7 +3,7 @@ name: biomedical-journal-selector
 description: 在本地评估生物医学论文质量，联网核验 SCI、中文核心与正规普刊，并生成含期刊指标、三阶段录用概率和投稿路径的 Word 测评报告。适用于全文或摘要择刊、候选刊比较和拒稿后转投；不用于保证录用或代写论文。
 license: MIT
 metadata:
-  version: "1.4.15"
+  version: "1.4.16"
   author: "Bin Lian"
 ---
 

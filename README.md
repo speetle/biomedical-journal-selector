@@ -10,7 +10,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent-Skill-2563EB)](./SKILL.md)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Compatible-7C3AED)](https://open.workbuddy.cn/en/docs/skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.15-0F766E)](./SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.4.16-0F766E)](./SKILL.md)
 [![Local Processing](https://img.shields.io/badge/manuscript-local%20processing-16A34A)](#隐私与本地处理)
 
 </div>
@@ -261,6 +261,7 @@ python3 scripts/package_workbuddy.py
 
 | 版本 | 要点 |
 |---|---|
+| 1.4.16 | 文档清除残留主表文件名 |
 | 1.4.15 | 期刊数据文件移出仓库与发行包，仅公开规模、字段与覆盖率；主表改为使用者挂载，自检区分 DEGRADED 与 FAIL |
 | 1.4.14 | 中文候选池字段与读取规则：初筛须回指主表行号，「未公开」字段禁止用中介站数据补齐 |
 | 1.4.13 | 路径可移植：主表改为外部挂载（`BJS_MAIN_TABLE` / `BJS_CN_TABLE` / `BJS_FINGERPRINT` / `BJS_DRILL_DIR`），数据文件不入库；打包脚本从 `SKILL.md` 读取版本号 |
