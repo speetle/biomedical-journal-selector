@@ -1,0 +1,48 @@
+{
+  "anchor_id": "jcr2026_biomed_scie_pubmed_v1",
+  "generated_at": "2026-11-07 22:53 GMT+8",
+  "source_workbook": "科睿唯安2026年度JCR期刊分区表.xlsx（用户提供，未随包分发）",
+  "source_sheet": "SCI双可检索",
+  "jcr_edition": "科睿唯安 2026 年度 JCR 期刊分区表（用户提供，版本以文件名为准）",
+  "nlm_snapshots": {
+    "J_Entrez.gz": "42161 条 / 10107378 解压字节",
+    "J_Medline.gz": "38109 条 / 9108687 解压字节",
+    "official": "https://ftp.ncbi.nlm.nih.gov/pubmed/"
+  },
+  "row_count": 4181,
+  "selection": "WoS 生物医学类别白名单 → 剔除 IF 为空 → 按 ISSN 去重保留 IF 最高行 → PubMed 可检索且 SCIE 收录",
+  "dual_check": "PubMed 主表刊号命中，或 PubMed 官方 E-utilities esearch 按 ISSN/EISSN 检出文献；SCIE 由分区表数据库列判定",
+  "fields": {
+    "pubmed": "PubMed 可检索（有文献记录）",
+    "medline": "MEDLINE 索引（更严格子集）",
+    "scie": "WoS/SCIE 收录",
+    "dual": "前两者中 PubMed 与 SCIE 同时为真"
+  },
+  "field_warning": "PubMed 可检索、MEDLINE 索引、SCIE 收录是三个不同维度，不得互相替代或合并成一个 SCI 标签。",
+  "refresh_policy": [
+    "距生成日超过 12 个月须重取",
+    "新一版 JCR 分区表发布须重取",
+    "NLM 期刊主表快照更新须重取",
+    "用户单位认定目录换版须重取",
+    "每次择刊仍须逐刊联网核验当前状态"
+  ],
+  "limitations": [
+    "分区表本身是期刊乘 WoS 学科展开表，已按 ISSN 去重，多学科分区只保留代表行",
+    "NLM 主表含历史停刊与更名刊，刊号命中不等于当前在版",
+    "4181 刊是候选池，不是收录资格判决书",
+    "418 本非 SCIE 的主表未命中期刊，经 2026-11-07 决定不再核验，保持“否”，不再列为待办"
+  ],
+  "not_authoritative_for": "国家级期刊、省级期刊（无官方目录与认定标准）",
+  "decisions_2026_11_07": [
+    "其余 418 本非 SCIE 未匹配期刊无需再核验，保持原标注",
+    "第二轮逐刊明细须经使用者明确确认后启动"
+  ],
+  "decisions_2026_11_12": [
+    "上条「须经使用者明确确认后启动」已于 2026-11-12 确认：生物医药择刊启用 references/期刊明细_第二轮.xlsx 的 逐刊明细 sheet 为唯一初筛候选池；原文保留不改，仅追加状态",
+    "本 TSV 与 catalog_anchor.json 降级为交叉校验与补缺索引，不得单独充当生物医药初筛源；TSV 的 4181 本不得反向覆盖主表 4398 本数据行",
+    "主表是 JCR2026 全表 + 抖音/B 站三层证据补刊 + 逐本剔除复核形成的已审定明细，字段更全且含剔除口径；冲突时以主表为准并并列标注差异",
+    "每次择刊仍须逐刊联网核验当前状态；静态字段不得冒充当前检索结果"
+  ],
+  "candidate_pool_role": "cross_check_only_not_primary_screen",
+  "primary_candidate_pool": "references/期刊明细_第二轮.xlsx#逐刊明细"
+}

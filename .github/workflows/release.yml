@@ -14,10 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install validator dependencies
+        run: python3 -m pip install --quiet openpyxl
+      - name: Compile all scripts
+        run: python3 -m py_compile scripts/*.py
       - name: Check probability helper
         run: python3 scripts/probability_check.py --screen 40 55 --review 35 50 --overall 14 28
-      - name: Check report validator syntax
-        run: python3 -m py_compile scripts/report_check.py
+      - name: Check candidate pool binding and rule text
+        run: python3 scripts/candidate_pool_check.py
       - name: Build WorkBuddy archive
         run: python3 scripts/package_workbuddy.py --output-dir .
       - name: Upload workflow artifacts

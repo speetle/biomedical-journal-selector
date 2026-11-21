@@ -10,7 +10,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent-Skill-2563EB)](./SKILL.md)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Compatible-7C3AED)](https://open.workbuddy.cn/en/docs/skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.0-0F766E)](./SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.4.13-0F766E)](./SKILL.md)
 [![Local Processing](https://img.shields.io/badge/manuscript-local%20processing-16A34A)](#隐私与本地处理)
 
 </div>
@@ -138,6 +138,22 @@ $biomedical-journal-selector
 
 通用 `SKILL.md` 保持 Agent Skills/Codex 兼容；发布脚本会自动生成含 WorkBuddy 专用中英文元数据的 ZIP。
 
+### 候选池主表
+
+生物医药类稿件的初筛候选池来自 `references/期刊明细_第二轮.xlsx`（随包分发，`逐刊明细` sheet，4398 本期刊 × 42 列，IF 降序）。默认直接读包内快照；如果你有自己的主表，用环境变量覆盖：
+
+```bash
+export BJS_MAIN_TABLE=/path/to/你的主表.xlsx
+```
+
+主表被修改后，用显式通道更新指纹并留下原因，禁止手工改 MD5：
+
+```bash
+python3 scripts/candidate_pool_check.py \
+  --fingerprint references/journal_master_fingerprint.json \
+  --update-fingerprint --reason "替换为 2027 版主表"
+```
+
 ## 使用
 
 安装后可直接用自然语言触发：
@@ -182,10 +198,15 @@ biomedical-journal-selector/
 │   ├── chinese-journals.md
 │   ├── output-template.md
 │   ├── privacy-local-processing.md
-│   └── word-report.md
+│   ├── word-report.md
+│   ├── 期刊明细_第二轮.xlsx        # 随包候选池主表（4398 本，42 列）
+│   ├── journal_master_fingerprint.json
+│   ├── catalog_anchor.json
+│   └── jcr_2026_candidates.tsv      # 交叉校验索引（4181 本）
 ├── scripts/
 │   ├── probability_check.py
 │   ├── report_check.py
+│   ├── candidate_pool_check.py      # 候选池 / 报告 / 模板自检
 │   └── package_workbuddy.py
 └── .github/workflows/release.yml
 ```
@@ -199,6 +220,12 @@ python3 scripts/probability_check.py \
   --screen 40 55 \
   --review 35 50 \
   --overall 14 28
+```
+
+自检候选池、规则文本、报告模板与指纹一致性（需 `pip install openpyxl`）：
+
+```bash
+python3 scripts/candidate_pool_check.py
 ```
 
 生成 WorkBuddy 安装包与 SHA-256 校验文件：
@@ -220,6 +247,19 @@ python3 scripts/package_workbuddy.py
 ## 贡献
 
 欢迎通过 Issues 报告失效来源、概率逻辑问题、期刊核验遗漏或跨平台兼容问题。请勿在公开 Issue 中上传未发表全文、患者资料或其他敏感信息。
+
+## 更新日志
+
+| 版本 | 要点 |
+|---|---|
+| 1.4.13 | 路径可移植：主表、指纹与演练目录改为包内相对路径，支持 `BJS_MAIN_TABLE` / `BJS_FINGERPRINT` / `BJS_DRILL_DIR` 覆盖；随包分发候选池主表；打包脚本从 `SKILL.md` 读取版本号，不再硬编码 |
+| 1.4.12 | 注入演练回执绑定：13 段演练结论写入回执并由单一入口逐件核对 MD5，杜绝「改了判据脚本仍沿用上次全绿」 |
+| 1.4.11 | Word 报告按 F1–F7 逐项机检；指纹更新只能显式触发且必须留痕；注入演练一键脚本化 |
+| 1.4.10 | 模板七项必填字段逐项机检 + 逐项反向演练；主表指纹升级为硬判据 |
+| 1.4.9 | 活跃自检套件纳入窗口上限与端到端报告；自检可分套注入验证 |
+| 1.4.8 | 报告端候选池绑定演练；主表外候选单独列示 |
+| 1.4.7 | 生物医药初筛候选池改为唯一来源 `期刊明细_第二轮.xlsx`，JCR 索引降级为交叉校验 |
+| 1.1.0 | 首个公开版：本地稿件诊断、三阶段录用概率、Word 报告 |
 
 ## 许可
 
