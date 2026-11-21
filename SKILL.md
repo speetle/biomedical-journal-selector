@@ -3,7 +3,7 @@ name: biomedical-journal-selector
 description: 在本地评估生物医学论文质量，联网核验 SCI、中文核心与正规普刊，并生成含期刊指标、三阶段录用概率和投稿路径的 Word 测评报告。适用于全文或摘要择刊、候选刊比较和拒稿后转投；不用于保证录用或代写论文。
 license: MIT
 metadata:
-  version: "1.4.13"
+  version: "1.4.14"
   author: "Bin Lian"
 ---
 
@@ -34,7 +34,7 @@ metadata:
 1. 阅读 [稿件评估](references/manuscript-assessment.md)，判断证据等级、研究质量、写作完成度、可修复与不可修复缺陷。
 2. 形成主题、文章类型、方法和读者画像。**生物医药领域稿件必须先读主表 `references/期刊明细_第二轮.xlsx`（随包快照；用户自有主表可用环境变量 `BJS_MAIN_TABLE` 指向）的 `逐刊明细` sheet（A:AP，42 列，4399 行含表头）作为唯一初筛候选池**，按主表内实际存在的字段（学科/收录、JCR 分区、IF、文章类型、OA/APC、年发文量等，字段名一律以文件表头为准，禁止凭记忆硬编码）取 5–15 本，再执行第 3 步逐刊联网核验。`references/jcr_2026_candidates.tsv`（4181 本）与 `catalog_anchor.json` 降级为**交叉校验与补缺索引**，不得单独充当生物医药初筛源；静态名单不得断言当前收录、分区或费用。详细规则见下方「生物医药候选池唯一来源」。
 3. 阅读 [期刊核验](references/journal-verification.md)，在不发送稿件内容的前提下联网核验每本重点候选刊的官方名称、范围、文章类型、收录、JCR 分区、中科院分区、最新影响因子、OA 情况、费用、时限、风险和近期相似论文。动态信息必须附年份、版本、核验日期和直接来源；判定「无文章 / 停刊 / 剔除」时同时执行下方「期刊活跃度与剔除的四条硬规则」。
-4. 涉及中文期刊时额外阅读 [中文期刊](references/chinese-journals.md)，区分北大核心、中国科技核心、CSCD和普通正式期刊。
+4. 涉及中文期刊时额外阅读 [中文期刊](references/chinese-journals.md)，区分北大核心、中国科技核心、CSCD和普通正式期刊。**中文候选池必须先读随包主表 `references/中文期刊明细_第二轮.xlsx` 的 `逐刊明细` sheet（1,084 本 × 41 列；用户自有主表用 `BJS_CN_TABLE` 覆盖）**，按主表实际字段取刊并写出主表行号；`审稿周期`/`版面费`/`录用率` 为「未公开」时如实标注，禁止用中介站或经验帖补齐。
 5. 阅读 [匹配、排序与概率](references/matching-and-ranking.md)，分别判断“适合吗、够得着吗、值得投吗”，估计三阶段概率并分为冲刺、主投和保底。
 6. 在可运行本地脚本时，用 `python3 scripts/probability_check.py --screen LOW HIGH --review LOW HIGH --overall LOW HIGH` 检查每本期刊的概率一致性。脚本不可用时手工执行同一乘法校验。
 7. 阅读 [Word 报告规范](references/word-report.md)，按 [输出模板](references/output-template.md) 生成 `.docx` 测评报告。核心结论必须在前，概率总览紧随其后并使用三线表。聊天回复只简要说明报告已完成并提供文件，不得用大段聊天文字替代报告。

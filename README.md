@@ -10,7 +10,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent-Skill-2563EB)](./SKILL.md)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Compatible-7C3AED)](https://open.workbuddy.cn/en/docs/skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.13-0F766E)](./SKILL.md)
+[![Version](https://img.shields.io/badge/version-1.4.14-0F766E)](./SKILL.md)
 [![Local Processing](https://img.shields.io/badge/manuscript-local%20processing-16A34A)](#隐私与本地处理)
 
 </div>
@@ -146,7 +146,13 @@ $biomedical-journal-selector
 export BJS_MAIN_TABLE=/path/to/你的主表.xlsx
 ```
 
-主表被修改后，用显式通道更新指纹并留下原因，禁止手工改 MD5：
+中文期刊同理，随包 `references/中文期刊明细_第二轮.xlsx`（`逐刊明细` sheet，1,084 本 × 41 列，含收录、核心标签、收稿范围、审稿周期、版面费、录用率、编辑部联系方式）：
+
+```bash
+export BJS_CN_TABLE=/path/to/你的中文主表.xlsx
+```
+
+SCI 主表被修改后，用显式通道更新指纹并留下原因，禁止手工改 MD5：
 
 ```bash
 python3 scripts/candidate_pool_check.py \
@@ -199,7 +205,8 @@ biomedical-journal-selector/
 │   ├── output-template.md
 │   ├── privacy-local-processing.md
 │   ├── word-report.md
-│   ├── 期刊明细_第二轮.xlsx        # 随包候选池主表（4398 本，42 列）
+│   ├── 期刊明细_第二轮.xlsx        # SCI 候选池主表（4398 本，42 列）
+│   ├── 中文期刊明细_第二轮.xlsx    # 中文候选池主表（1084 本，41 列）
 │   ├── journal_master_fingerprint.json
 │   ├── catalog_anchor.json
 │   └── jcr_2026_candidates.tsv      # 交叉校验索引（4181 本）
@@ -252,6 +259,7 @@ python3 scripts/package_workbuddy.py
 
 | 版本 | 要点 |
 |---|---|
+| 1.4.14 | 随包分发中文期刊主表（1,084 本 × 41 列）与读取规则；中文稿初筛必须回指主表行号，「未公开」字段禁止用中介站数据补齐 |
 | 1.4.13 | 路径可移植：主表、指纹与演练目录改为包内相对路径，支持 `BJS_MAIN_TABLE` / `BJS_FINGERPRINT` / `BJS_DRILL_DIR` 覆盖；随包分发候选池主表；打包脚本从 `SKILL.md` 读取版本号，不再硬编码 |
 | 1.4.12 | 注入演练回执绑定：13 段演练结论写入回执并由单一入口逐件核对 MD5，杜绝「改了判据脚本仍沿用上次全绿」 |
 | 1.4.11 | Word 报告按 F1–F7 逐项机检；指纹更新只能显式触发且必须留痕；注入演练一键脚本化 |
